@@ -1,0 +1,412 @@
+index.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+include("view/TampilMahasiswa.php");
+
+$tp = new TampilMahasiswa();
+$data = $tp->tampil();
+?>
+
+view/ 
+KontrakView.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+interface KontrakView{
+	public function tampil();
+}
+?>
+TampilMahasiswa.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+include("KontrakView.php");
+include("presenter/ProsesMahasiswa.php");
+
+class TampilMahasiswa implements KontrakView
+{
+	private $prosesmahasiswa; // Presenter yang dapat berinteraksi langsung dengan view
+	private $tpl;
+
+	function __construct()
+	{
+		//konstruktor
+		$this->prosesmahasiswa = new ProsesMahasiswa();
+	}
+
+	function tampil()
+	{
+		$this->prosesmahasiswa->prosesDataMahasiswa();
+		$data = null;
+
+		//semua terkait tampilan adalah tanggung jawab view
+		for ($i = 0; $i < $this->prosesmahasiswa->getSize(); $i++) {
+			$no = $i + 1;
+			$data .= "<tr>
+			<td>" . $no . "</td>
+			<td>" . $this->prosesmahasiswa->getNim($i) . "</td>
+			<td>" . $this->prosesmahasiswa->getNama($i) . "</td>
+			<td>" . $this->prosesmahasiswa->getTempat($i) . "</td>
+			<td>" . $this->prosesmahasiswa->getTl($i) . "</td>
+			<td>" . $this->prosesmahasiswa->getGender($i) . "</td> </tr>";
+		}
+		// Membaca template skin.html
+		$this->tpl = new Template("templates/skin.html");
+
+		// Mengganti kode Data_Tabel dengan data yang sudah diproses
+		$this->tpl->replace("DATA_TABEL", $data);
+
+		// Menampilkan ke layar
+		$this->tpl->write();
+	}
+}
+
+Presenter/
+ProsesMahasiswa.php
+<?php
+
+include("KontrakPresenter.php");
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+class ProsesMahasiswa implements KontrakPresenter
+{
+	private $tabelmahasiswa;
+	private $data = [];
+
+	function __construct()
+	{
+		// Konstruktor
+		try {
+			$db_host = "localhost"; // host 
+			$db_user = "root"; // user
+			$db_password = ""; // password
+			$db_name = "mvp_php"; // nama basis data
+			$this->tabelmahasiswa = new TabelMahasiswa($db_host, $db_user, $db_password, $db_name); // instansi TabelMahasiswa
+			$this->data = array(); // instansi list untuk data Mahasiswa
+		} catch (Exception $e) {
+			echo "yah error" . $e->getMessage();
+		}
+	}
+
+	function prosesDataMahasiswa()
+	{
+		try {
+			// mengambil data di tabel Mahasiswa
+			$this->tabelmahasiswa->open();
+			$this->tabelmahasiswa->getMahasiswa();
+
+			while ($row = $this->tabelmahasiswa->getResult()) {
+				// ambil hasil query
+				$mahasiswa = new Mahasiswa(); // instansiasi objek mahasiswa untuk setiap data mahasiswa
+				$mahasiswa->setId($row['id']); // mengisi id
+				$mahasiswa->setNim($row['nim']); // mengisi nim
+				$mahasiswa->setNama($row['nama']); // mengisi nama
+				$mahasiswa->setTempat($row['tempat']); // mengisi tempat
+				$mahasiswa->setTl($row['tl']); // mengisi tl
+				$mahasiswa->setGender($row['gender']); // mengisi gender
+
+				$this->data[] = $mahasiswa; // tambahkan data mahasiswa ke dalam list
+			}
+			// Tutup koneksi
+			$this->tabelmahasiswa->close();
+		} catch (Exception $e) {
+			// memproses error
+			echo "yah error part 2" . $e->getMessage();
+		}
+	}
+	function getId($i)
+	{
+		// mengembalikan id mahasiswa dengan indeks ke i
+		return $this->data[$i]->id;
+	}
+	function getNim($i)
+	{
+		// mengembalikan nim mahasiswa dengan indeks ke i
+		return $this->data[$i]->nim;
+	}
+	function getNama($i)
+	{
+		// mengembalikan nama mahasiswa dengan indeks ke i
+		return $this->data[$i]->nama;
+	}
+	function getTempat($i)
+	{
+		// mengembalikan tempat mahasiswa dengan indeks ke i
+		return $this->data[$i]->tempat;
+	}
+	function getTl($i)
+	{
+		// mengembalikan tanggal lahir(TL) mahasiswa dengan indeks ke i
+		return $this->data[$i]->tl;
+	}
+	function getGender($i)
+	{
+		// mengembalikan gender mahasiswa dengan indeks ke i
+		return $this->data[$i]->gender;
+	}
+	function getSize()
+	{
+		return sizeof($this->data);
+	}
+}
+
+KontrakPresenter.php 
+<?php
+
+include("model/Template.class.php");
+include("model/DB.class.php");
+include("model/Mahasiswa.class.php");
+include("model/TabelMahasiswa.class.php");
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+// Interface atau gambaran dari presenter akan seperti apa
+interface KontrakPresenter
+{
+	public function prosesDataMahasiswa();
+	public function getId($i);
+	public function getNim($i);
+	public function getNama($i);
+	public function getTempat($i);
+	public function getTl($i);
+	public function getGender($i);
+	public function getSize();
+}
+
+mvp_php/model/Template.class.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 12 & 13 & 14
+******************************************/
+
+class Template{
+	var $filename = ''; // handle file
+	var $content = ''; // handle isi file
+
+	function __construct($filename = ''){
+		// konstruktor
+		$this->filename = $filename;
+
+		// membaca file tampilan
+		$this->content = implode('', @file($filename));
+	}
+
+	function clear(){
+		// membersihkan isi kode yang seharusnya diganti
+		// mengganti tulisan Data_... dengan kosong jika ada yang lupa untuk diganti
+		// jika  tidak ingin menggunakan kode DATA_... dapat diganti di bagian pola ekspresi reguler
+		$this->content = preg_replace("/DATA_[A-Z|_|0-9]+/", "", $this->content);
+
+	}
+
+	function write(){
+		// menulis isi file ke layar
+		// menghapus DATA_ yang belum diganti
+		$this->clear();
+		// tampilkan tampilan yang telah diganti ke layar
+		print $this->content;
+
+	}
+
+	function getContent(){
+		// mengambil isi file yang sudah di proses
+		// mengahpus DATA_..  yang belum diganti
+		$this->clear();
+
+		// mengembalikan isi tampilan
+		return $this->content;
+	}
+
+	function replace($old = '', $new = ''){
+		// mengganti kode dalam file (DATA_...)
+		// pemrosesan nilai yang akan menggantikan
+		if(is_int($new)){
+			// jika penggantinya bilangan bulat (diubah ke formatnya ke teks)
+			$value = sprintf("%d", $new);
+
+		}elseif(is_float($new)){
+			// jika penggantinya bilangan real *diubah formatnya ke teks
+			$value = sprintf("%f", $new);
+		}elseif(is_array($new)){
+			// jika penggantinya bilangan array/tabel *diubah formatnya ke teks
+			$value = '';
+			// pemrosesan setiap elemen array/tabel
+			foreach( $new as $item){
+				$value .= $item. '';
+			}
+
+		}else{
+			// jika selain tipe yang ada diatas maka langsung diisikan untuk menggantikan
+			$value = $new;
+		}
+
+		// menggantikan suatu teks dengan teks baru (misal DATA_... diganti dengan <table> </table>)
+		$this->content = preg_replace("/$old/",  $value, $this->content);
+
+	}
+}
+mvp_php/model/TabelMahasiswa.class.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+// Kelas yang berisikan tabel dari mahasiswa
+class TabelMahasiswa extends DB
+{
+	function getMahasiswa()
+	{
+		// Query mysql select data mahasiswa
+		$query = "SELECT * FROM mahasiswa";
+		
+		// Mengeksekusi query
+		return $this->execute($query);
+	}
+}
+
+mvp_php/model/Mahasiswa.class.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+// Kelas yang menggambarkan detail sebuah mahasiswa dengan atribut-atributnya
+class Mahasiswa
+{
+	var $id = '';
+	var $nim = '';
+	var $nama = '';
+	var $tempat = '';
+	var $tl = '';
+	var $gender = '';
+
+	function __construct($id = '', $nim = '', $nama = '', $tempat = '', $tl = '', $gender = '')
+	{
+		$this->id = $id;
+		$this->nim = $nim;
+		$this->nama = $nama;
+		$this->tempat = $tempat;
+		$this->tl = $tl;
+		$this->gender = $gender;
+	}
+
+	function setId($id)
+	{
+		$this->id = $id;
+	}
+	function setNim($nim)
+	{
+		$this->nim = $nim;
+	}
+	function setNama($nama)
+	{
+		$this->nama = $nama;
+	}
+	function setTempat($tempat)
+	{
+		$this->tempat = $tempat;
+	}
+	function setTl($tl)
+	{
+		$this->tl = $tl;
+	}
+	function setGender($gender)
+	{
+		$this->gender = $gender;
+	}
+
+	function getId()
+	{
+		return $this->id;
+	}
+	function getNim()
+	{
+		return $this->nim;
+	}
+	function getNama()
+	{
+		return $this->nama;
+	}
+	function getTempat()
+	{
+		return $this->tempat;
+	}
+	function getTl()
+	{
+		return $this->tl;
+	}
+	function getGender()
+	{
+		return $this->gender;
+	}
+}
+mvp_php/model/DB.class.php
+<?php
+
+/******************************************
+ Asisten Pemrogaman 13 & 14
+******************************************/
+
+class DB
+{
+	var $db_host = ''; // host
+	var $db_user = ''; // user basis data
+	var $db_password = ''; // password
+	var $db_name = ''; // nama basis data
+	var $db_link = ''; // nama basis data
+	var $result = 0;
+
+	function __construct($db_host = '', $db_user = '', $db_password = '', $db_name = '')
+	{
+		// konstruktor
+		$this->db_host = $db_host;
+		$this->db_user = $db_user;
+		$this->db_password = $db_password;
+		$this->db_name = $db_name;
+	}
+
+	function open()
+	{
+		// membuka koneksi
+		$this->db_link = mysqli_connect($this->db_host, $this->db_user, $this->db_password, $this->db_name);
+	}
+
+	function execute($query = "")
+	{
+		// mengeksekusi query
+		$this->result = mysqli_query($this->db_link, $query);
+
+		return $this->result;
+	}
+
+	function getResult()
+	{
+		// mengambil ekseskusi query
+		return mysqli_fetch_array($this->result);
+	}
+
+	function close()
+	{
+		// menutup koneksi
+		mysqli_close($this->db_link);
+	}
+}
+
