@@ -13,19 +13,19 @@ memungkinkan pengguna untuk:
 ## Struktur Program
 ```
 ├── index.php                # Entry point aplikasi
-├── KontrakPresenter.php     # Interface untuk Presenter
-├── KontrakView.php          # Interface untuk View
 ├── model/
 │   ├── DB.class.php         # Kelas untuk koneksi database
 │   ├── Mahasiswa.class.php  # Model data mahasiswa
 │   ├── TabelMahasiswa.class.php # Model untuk operasi tabel mahasiswa
 │   └── Template.class.php   # Kelas untuk template view
 ├── presenter/
+│   ├── KontrakPresenter.php     # Interface untuk Presenter
 │   └── ProsesMahasiswa.php  # Presenter untuk logika bisnis mahasiswa
 ├── templates/
 │   └── skin.html            # Template HTML untuk tampilan
 └── view/
-    └── TampilMahasiswa.php  # View untuk menampilkan data mahasiswa
+    ├── TampilMahasiswa.php  # View untuk menampilkan data mahasiswa
+    └── KontrakView.php          # Interface untuk View
 ```
 
 ## Alur Program
